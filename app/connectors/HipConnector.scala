@@ -27,23 +27,20 @@ import uk.gov.hmrc.http.HttpResponse
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
-import java.util.UUID
 
 trait HipConnector extends Logging {
 
   val appConfig: AppConfig
 
-  def headers: Seq[(String, String)] =
+  def hipHeaders(correlationId: String): Seq[(String, String)] =
     Seq(
       HeaderNames.ACCEPT      -> MimeTypes.JSON,
-      "correlationid"         -> UUID.randomUUID().toString,
+      "correlationid"         -> correlationId,
       "X-Originating-System"  -> "PPT",
       "X-Receipt-Date"        -> DateTimeFormatter.ISO_INSTANT.format(Instant.now().truncatedTo(ChronoUnit.SECONDS)),
       "X-Transmitting-System" -> "HIP",
       "Authorization"         -> s"Basic ${appConfig.hipAuthorizationToken}"
     )
-
-  lazy val correlationid = headers.toMap.getOrElse("correlationid", "NOT FOUND")
 
   private def mkErr(code: String, text: String, status: Int = 422) = {
     SubscriptionFailureResponseWithStatusCode(
@@ -57,6 +54,18 @@ trait HipConnector extends Logging {
     "004" -> mkErr("DUPLICATE_SUBMISSION", "The remote endpoint has indicated that duplicate submission acknowledgment reference.", 409),
     "087" -> mkErr("BUSINESS_VALIDATION", "The remote endpoint has indicated cannot Create Group Subscription."),
     "089" -> mkErr("INVALID_PPT_REFERENCE_NUMBER", "The remote endpoint has indicated that the PPT Reference Number provided is invalid."),
+    "090" -> mkErr("CANNOT_CREATE_PARTNERSHIP_SUBSCRIPTION", "The remote end point has indicated cannot Create Partnership Subscription."),
+    "999" -> mkErr("SERVER_ERROR", "IF is currently experiencing problems that require live service intervention.", 500)
+  )
+
+  val subscriptionCreate422ResponseMappings: Map[String, SubscriptionFailureResponseWithStatusCode] = Map(
+    "001" -> mkErr("INVALID_REGIME", "The remote endpoint has indicated that the REGIME provided is invalid."),
+    "003" -> mkErr("BAD_GATEWAY", "Dependent systems are currently not responding.", 502),
+    "004" -> mkErr("DUPLICATE_SUBMISSION", "The remote endpoint has indicated that duplicate submission acknowledgment reference.", 409),
+    "007" -> mkErr("ACTIVE_SUBSCRIPTION_EXISTS", "The remote endpoint has indicated that Business Partner already has active subscription for this regime."),
+    "087" -> mkErr("BUSINESS_VALIDATION", "The remote endpoint has indicated cannot Create Group Subscription."),
+    "088" -> mkErr("ACTIVE_GROUP_SUBSCRIPTION_EXISTS", "The remote endpoint has indicated that Business Partner already has an active Group Subscription."),
+    "089" -> mkErr("INVALID_SAFEID", "The remote endpoint has indicated that the SAFEID provided is invalid."),
     "090" -> mkErr("CANNOT_CREATE_PARTNERSHIP_SUBSCRIPTION", "The remote end point has indicated cannot Create Partnership Subscription."),
     "999" -> mkErr("SERVER_ERROR", "IF is currently experiencing problems that require live service intervention.", 500)
   )

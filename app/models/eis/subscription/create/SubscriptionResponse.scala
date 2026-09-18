@@ -56,12 +56,13 @@ case object HipSubscriptionSuccessfulResponse {
 }
 
 case class HipInner422Err(errorId: String, processingDate: String, text: String)
+
 case object HipInner422Err {
-  given format: OFormat[HipInner422Err] =
-    Json.format[HipInner422Err]
+  given format: OFormat[HipInner422Err] = Json.format[HipInner422Err]
 }
+
 case class Hip422Error(error: HipInner422Err)
-case object Hip422Error{
-  given format: OFormat[Hip422Error] =
-    Json.format[Hip422Error]  
+
+case object Hip422Error {
+  given format: OFormat[Hip422Error] = Json.format[Hip422Error]
 }

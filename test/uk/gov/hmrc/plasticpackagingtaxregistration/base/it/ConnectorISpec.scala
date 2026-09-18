@@ -51,6 +51,8 @@ class ConnectorISpec
   def overrideConfig: Map[String, Any] =
     Map("microservice.services.eis.host"                   -> wireHost,
         "microservice.services.eis.port"                   -> wirePort,
+        "microservice.services.hip.host"                   -> wireHost,
+        "microservice.services.hip.port"                   -> wirePort,
         "microservice.services.nrs.host"                   -> wireHost,
         "microservice.services.nrs.port"                   -> wirePort,
         "microservice.services.tax-enrolments.host"        -> wireHost,
@@ -58,11 +60,10 @@ class ConnectorISpec
         "microservice.services.enrolment-store-proxy.port" -> wirePort
     )
 
-  def getTimer(name: String): Timer = {
+  def getTimer(name: String): Timer =
     metrics.defaultRegistry
       .getTimers(MetricFilter.startsWith(name))
       .get(name)
-  }
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()

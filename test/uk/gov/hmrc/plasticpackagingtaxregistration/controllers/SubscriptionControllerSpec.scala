@@ -37,7 +37,7 @@ import org.mockito.{ArgumentCaptor, ArgumentMatchers}
 import play.api.libs.json.Json.toJson
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.Result
-import play.api.test.Helpers.{contentAsJson, route, status, _}
+import play.api.test.Helpers.*
 import uk.gov.hmrc.auth.core.InsufficientEnrolments
 import uk.gov.hmrc.http.{HeaderCarrier, HttpException}
 

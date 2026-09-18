@@ -16,6 +16,7 @@
 
 package base.data
 
+import play.api.http.Status.{INTERNAL_SERVER_ERROR, UNPROCESSABLE_ENTITY}
 import play.api.mvc.AnyContentAsEmpty
 import play.api.test.FakeRequest
 import base.AuthTestSupport
@@ -23,6 +24,7 @@ import models.eis.EISError
 import models.eis.subscription._
 import models.eis.subscription.create.{
   EISSubscriptionFailureResponse,
+  SubscriptionFailureResponseWithStatusCode,
   SubscriptionSuccessfulResponse
 }
 import models.eis.subscription.group.GroupPartnershipDetails.Relationship
@@ -82,6 +84,29 @@ trait SubscriptionTestData extends AuthTestSupport {
   protected val subscriptionCreateFailureResponse: EISSubscriptionFailureResponse =
     EISSubscriptionFailureResponse(failures =
       Seq(EISError(code = "123", reason = "error"))
+    )
+
+  // The EIS-shaped failures HIP responses are mapped onto before leaving this service.
+  protected val hipMappedBusinessValidationFailure: SubscriptionFailureResponseWithStatusCode =
+    SubscriptionFailureResponseWithStatusCode(
+      EISSubscriptionFailureResponse(failures =
+        Seq(
+          EISError(
+            code = "ACTIVE_SUBSCRIPTION_EXISTS",
+            reason =
+              "The remote endpoint has indicated that Business Partner already has active subscription for this regime."
+          )
+        )
+      ),
+      UNPROCESSABLE_ENTITY
+    )
+
+  protected val hipMappedSystemFailure: SubscriptionFailureResponseWithStatusCode =
+    SubscriptionFailureResponseWithStatusCode(
+      EISSubscriptionFailureResponse(failures =
+        Seq(EISError(code = "500", reason = "Internal Server Error"))
+      ),
+      INTERNAL_SERVER_ERROR
     )
 
   protected val ukLimitedCompanySubscription: Subscription = Subscription(

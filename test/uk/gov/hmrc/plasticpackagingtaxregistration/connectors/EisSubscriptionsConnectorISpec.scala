@@ -16,12 +16,21 @@
 
 package connectors
 
-import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, get, post, put}
+import com.github.tomakehurst.wiremock.client.WireMock.{
+  aResponse,
+  equalTo,
+  get,
+  matching,
+  post,
+  postRequestedFor,
+  put,
+  urlEqualTo
+}
 import org.scalatest.Inspectors.forAll
 import org.scalatest.concurrent.ScalaFutures
 import play.api.http.Status
 import play.api.http.Status.{CONFLICT, OK}
-import play.api.libs.json.Json
+import play.api.libs.json.{JsObject, Json}
 import play.api.test.Helpers.await
 import uk.gov.hmrc.http.UpstreamErrorResponse
 import base.Injector
@@ -40,12 +49,13 @@ import org.scalatest.EitherValues
 
 import java.time.{ZoneOffset, ZonedDateTime}
 import java.util.UUID
+import scala.jdk.CollectionConverters.ListHasAsScala
 
 class EisSubscriptionsConnectorISpec
     extends ConnectorISpec with Injector with ScalaFutures with SubscriptionTestData
     with EitherValues {
 
-  private lazy val connector: EisSubscriptionsConnector =
+  private lazy val eisConnector: EisSubscriptionsConnector =
     app.injector.instanceOf[EisSubscriptionsConnector]
 
   private val pptSubscriptionSubmissionTimer = "ppt.subscription.submission.timer"
@@ -53,7 +63,7 @@ class EisSubscriptionsConnectorISpec
   private val pptSubscriptionDisplayTimer    = "ppt.subscription.display.timer"
   private val pptSubscriptionUpdateTimer     = "ppt.subscription.update.timer"
 
-  "Subscription connector" when {
+  "EIS subscription connector" when {
     "requesting a subscription status" should {
       "handle a 200" in {
         stubFor(
@@ -71,7 +81,7 @@ class EisSubscriptionsConnectorISpec
             )
         )
 
-        val res = await(connector.getSubscriptionStatus(safeNumber)).value
+        val res = await(eisConnector.getSubscriptionStatus(safeNumber)).value
 
         res.status mustBe NOT_SUBSCRIBED
         res.pptReference mustBe Some("XXPPTP" + safeNumber + "789")
@@ -88,7 +98,7 @@ class EisSubscriptionsConnectorISpec
 
         stubSubscriptionStatusFailure(httpStatus = Status.BAD_REQUEST, errors = errors)
 
-        val res = await(connector.getSubscriptionStatus(safeNumber)).left.value
+        val res = await(eisConnector.getSubscriptionStatus(safeNumber)).left.value
         res mustBe Status.BAD_REQUEST
 
         getTimer(pptSubscriptionStatusTimer).getCount mustBe 1
@@ -102,7 +112,7 @@ class EisSubscriptionsConnectorISpec
         )
         stubSubscriptionStatusFailure(httpStatus = Status.NOT_FOUND, errors = errors)
 
-        val res = await(connector.getSubscriptionStatus(safeNumber)).left.value
+        val res = await(eisConnector.getSubscriptionStatus(safeNumber)).left.value
         res mustBe Status.NOT_FOUND
 
         getTimer(pptSubscriptionStatusTimer).getCount mustBe 1
@@ -117,7 +127,7 @@ class EisSubscriptionsConnectorISpec
 
         stubSubscriptionStatusFailure(httpStatus = Status.INTERNAL_SERVER_ERROR, errors = errors)
 
-        val res = await(connector.getSubscriptionStatus(safeNumber)).left.value
+        val res = await(eisConnector.getSubscriptionStatus(safeNumber)).left.value
         res mustBe Status.INTERNAL_SERVER_ERROR
 
         getTimer(pptSubscriptionStatusTimer).getCount mustBe 1
@@ -132,7 +142,7 @@ class EisSubscriptionsConnectorISpec
 
         stubSubscriptionStatusFailure(httpStatus = Status.BAD_GATEWAY, errors = errors)
 
-        val res = await(connector.getSubscriptionStatus(safeNumber)).left.value
+        val res = await(eisConnector.getSubscriptionStatus(safeNumber)).left.value
         res mustBe Status.BAD_GATEWAY
 
         getTimer(pptSubscriptionStatusTimer).getCount mustBe 1
@@ -147,7 +157,7 @@ class EisSubscriptionsConnectorISpec
 
         stubSubscriptionStatusFailure(httpStatus = Status.SERVICE_UNAVAILABLE, errors = errors)
 
-        val res = await(connector.getSubscriptionStatus(safeNumber)).left.value
+        val res = await(eisConnector.getSubscriptionStatus(safeNumber)).left.value
         res mustBe Status.SERVICE_UNAVAILABLE
 
         getTimer(pptSubscriptionStatusTimer).getCount mustBe 1
@@ -177,7 +187,7 @@ class EisSubscriptionsConnectorISpec
 
         val res: SubscriptionSuccessfulResponse =
           await(
-            connector.submitSubscription(safeNumber, ukLimitedCompanySubscription)
+            eisConnector.submitSubscription(safeNumber, ukLimitedCompanySubscription)
           ).asInstanceOf[SubscriptionSuccessfulResponse]
 
         res.pptReferenceNumber mustBe pptReference
@@ -198,7 +208,8 @@ class EisSubscriptionsConnectorISpec
 
             stubSubscriptionSubmissionFailure(httpStatus = statusCode, errors = errors)
 
-            val resp = await(connector.submitSubscription(safeNumber, ukLimitedCompanySubscription))
+            val resp =
+              await(eisConnector.submitSubscription(safeNumber, ukLimitedCompanySubscription))
 
             resp mustBe SubscriptionFailureResponseWithStatusCode(
               EISSubscriptionFailureResponse(List(EISError(statusCode.toString, "Error reason."))),
@@ -214,7 +225,7 @@ class EisSubscriptionsConnectorISpec
         stubSubscriptionSubmitException(OK)
 
         intercept[UpstreamErrorResponse] {
-          await(connector.submitSubscription(safeNumber, ukLimitedCompanySubscription))
+          await(eisConnector.submitSubscription(safeNumber, ukLimitedCompanySubscription))
         }.statusCode mustBe Status.INTERNAL_SERVER_ERROR
       }
 
@@ -222,7 +233,7 @@ class EisSubscriptionsConnectorISpec
         stubSubscriptionSubmitException(CONFLICT)
 
         intercept[UpstreamErrorResponse] {
-          await(connector.submitSubscription(safeNumber, ukLimitedCompanySubscription))
+          await(eisConnector.submitSubscription(safeNumber, ukLimitedCompanySubscription))
         }.statusCode mustBe Status.INTERNAL_SERVER_ERROR
       }
     }
@@ -248,7 +259,7 @@ class EisSubscriptionsConnectorISpec
 
         val res: SubscriptionSuccessfulResponse =
           await(
-            connector.submitSubscription(safeNumber, ukLimitedCompanyGroupSubscription)
+            eisConnector.submitSubscription(safeNumber, ukLimitedCompanyGroupSubscription)
           ).asInstanceOf[SubscriptionSuccessfulResponse]
 
         res.pptReferenceNumber mustBe pptReference
@@ -265,7 +276,7 @@ class EisSubscriptionsConnectorISpec
         val pptReference = UUID.randomUUID().toString
         stubSubscriptionDisplay(pptReference, ukLimitedCompanySubscription)
 
-        val res: Either[Int, Subscription] = await(connector.getSubscription(pptReference))
+        val res: Either[Int, Subscription] = await(eisConnector.getSubscription(pptReference))
 
         res.toOption mustBe Some(ukLimitedCompanySubscription)
 
@@ -287,7 +298,7 @@ class EisSubscriptionsConnectorISpec
                                            pptReference = pptReference
             )
 
-            val res = await(connector.getSubscription(pptReference))
+            val res = await(eisConnector.getSubscription(pptReference))
 
             res.left.value mustBe statusCode
             getTimer(pptSubscriptionDisplayTimer).getCount mustBe 1
@@ -318,7 +329,7 @@ class EisSubscriptionsConnectorISpec
 
         val res: SubscriptionSuccessfulResponse =
           await(
-            connector.updateSubscription(pptReference, ukLimitedCompanySubscription)
+            eisConnector.updateSubscription(pptReference, ukLimitedCompanySubscription)
           ).asInstanceOf[SubscriptionSuccessfulResponse]
 
         res.pptReferenceNumber mustBe pptReference
@@ -340,7 +351,7 @@ class EisSubscriptionsConnectorISpec
             stubSubscriptionUpdateFailure(httpStatus = statusCode, errors = errors)
 
             val resp =
-              await(connector.updateSubscription(pptReference, ukLimitedCompanySubscription))
+              await(eisConnector.updateSubscription(pptReference, ukLimitedCompanySubscription))
 
             resp mustBe SubscriptionFailureResponseWithStatusCode(
               EISSubscriptionFailureResponse(List(EISError(statusCode.toString, "Error reason."))),
@@ -355,7 +366,7 @@ class EisSubscriptionsConnectorISpec
         stubSubscriptionUpdateException(Status.OK)
 
         intercept[UpstreamErrorResponse] {
-          await(connector.updateSubscription(pptReference, ukLimitedCompanySubscription))
+          await(eisConnector.updateSubscription(pptReference, ukLimitedCompanySubscription))
         }.statusCode mustBe Status.INTERNAL_SERVER_ERROR
       }
 
@@ -363,7 +374,7 @@ class EisSubscriptionsConnectorISpec
         stubSubscriptionUpdateException(Status.CONFLICT)
 
         intercept[UpstreamErrorResponse] {
-          await(connector.updateSubscription(pptReference, ukLimitedCompanySubscription))
+          await(eisConnector.updateSubscription(pptReference, ukLimitedCompanySubscription))
         }.statusCode mustBe Status.INTERNAL_SERVER_ERROR
       }
     }

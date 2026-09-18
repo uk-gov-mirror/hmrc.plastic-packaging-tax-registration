@@ -20,7 +20,10 @@ import controllers.actions.Authenticator
 import controllers.response.JSONResponses
 import models.DeregistrationReason.DeregistrationReason
 import models.eis.EISError
-import models.eis.subscription.create.{SubscriptionFailureResponseWithStatusCode, SubscriptionSuccessfulResponse}
+import models.eis.subscription.create.{
+  SubscriptionFailureResponseWithStatusCode,
+  SubscriptionSuccessfulResponse
+}
 import models.eis.subscription.update.SubscriptionUpdateWithNrsStatusResponse
 import models.eis.subscription.{ChangeOfCircumstanceDetails, DeregistrationDetails, Subscription}
 import models.nrs.NonRepudiationSubmissionAccepted

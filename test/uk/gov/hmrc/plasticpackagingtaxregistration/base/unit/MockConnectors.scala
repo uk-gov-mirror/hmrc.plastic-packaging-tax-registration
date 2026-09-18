@@ -26,8 +26,18 @@ import models.eis.subscription.Subscription
 import models.eis.subscription.create.{SubscriptionFailureResponseWithStatusCode, SubscriptionResponse, SubscriptionSuccessfulResponse}
 import models.eis.subscriptionStatus.SubscriptionStatusResponse
 import connectors.parsers.TaxEnrolmentsHttpParser
-import connectors.parsers.TaxEnrolmentsHttpParser.{FailedTaxEnrolment, SuccessfulTaxEnrolment, TaxEnrolmentsResponse}
-import connectors.{EisSubscriptionsConnector, EnrolmentStoreProxyConnector, HipSubscriptionsConnector, NonRepudiationConnector, TaxEnrolmentsConnector}
+import connectors.parsers.TaxEnrolmentsHttpParser.{
+  FailedTaxEnrolment,
+  SuccessfulTaxEnrolment,
+  TaxEnrolmentsResponse
+}
+import connectors.{
+  EisSubscriptionsConnector,
+  EnrolmentStoreProxyConnector,
+  HipSubscriptionsConnector,
+  NonRepudiationConnector,
+  TaxEnrolmentsConnector
+}
 import models.nrs.{NonRepudiationMetadata, NonRepudiationSubmissionAccepted}
 import org.scalatestplus.mockito.MockitoSugar.mock
 
@@ -38,6 +48,7 @@ trait MockConnectors extends BeforeAndAfterEach {
 
   protected val mockEisSubscriptionsConnector: EisSubscriptionsConnector =
     mock[EisSubscriptionsConnector]
+
   protected val mockHipSubscriptionsConnector: HipSubscriptionsConnector =
     mock[HipSubscriptionsConnector]
 
@@ -50,6 +61,7 @@ trait MockConnectors extends BeforeAndAfterEach {
   override protected def beforeEach(): Unit = {
     super.beforeEach()
     reset(mockEisSubscriptionsConnector,
+          mockHipSubscriptionsConnector,
           mockNonRepudiationConnector,
           mockTaxEnrolmentsConnector,
           mockEnrolmentStoreProxyConnector
@@ -97,6 +109,20 @@ trait MockConnectors extends BeforeAndAfterEach {
   ): OngoingStubbing[Future[SubscriptionResponse]] =
     when(mockEisSubscriptionsConnector.submitSubscription(any(), any())(using any())).thenReturn(
       Future.successful(subscription)
+    )
+
+  protected def mockHipSubscriptionCreate(
+    subscription: SubscriptionSuccessfulResponse
+  ): OngoingStubbing[Future[SubscriptionResponse]] =
+    when(mockHipSubscriptionsConnector.submitSubscription(any(), any())(using any())).thenReturn(
+      Future.successful(subscription)
+    )
+
+  protected def mockHipSubscriptionCreateFailure(
+    failedResponse: SubscriptionFailureResponseWithStatusCode
+  ): OngoingStubbing[Future[SubscriptionResponse]] =
+    when(mockHipSubscriptionsConnector.submitSubscription(any(), any())(using any())).thenReturn(
+      Future.successful(failedResponse)
     )
 
   protected def mockSubscriptionUpdate(

@@ -20,7 +20,10 @@ import controllers.actions.Authenticator
 import controllers.response.JSONResponses
 import models.eis.EISError
 import models.eis.subscription.Subscription
-import models.eis.subscription.create.{SubscriptionFailureResponseWithStatusCode, SubscriptionSuccessfulResponse}
+import models.eis.subscription.create.{
+  SubscriptionFailureResponseWithStatusCode,
+  SubscriptionSuccessfulResponse
+}
 import models.eis.subscription.update.SubscriptionUpdateWithNrsStatusResponse
 import models.{Registration, RegistrationRequest}
 import play.api.Logger
