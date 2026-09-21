@@ -454,7 +454,7 @@ class HipSubscriptionConnectorSpec
                     |  "error": {
                     |    "errorId": "004",
                     |    "processingDate": "2026-07-09T09:26:17Z",
-                    |    "text": "Duplicate submission acknowledgment reference"
+                    |    "text": "Duplicate submission"
                     |  }
                     |}
                     |""".stripMargin
@@ -484,7 +484,7 @@ class HipSubscriptionConnectorSpec
                     |  "error": {
                     |    "errorId": "087",
                     |    "processingDate": "2026-07-09T09:26:17Z",
-                    |    "text": "???"
+                    |    "text": "Cannot Create Group Subscription"
                     |  }
                     |}
                     |""".stripMargin
@@ -514,7 +514,7 @@ class HipSubscriptionConnectorSpec
                     |  "error": {
                     |    "errorId": "089",
                     |    "processingDate": "2026-07-09T09:26:17Z",
-                    |    "text": "ID Number missing or invalid"
+                    |    "text": "ID number missing or invalid"
                     |  }
                     |}
                     |""".stripMargin
